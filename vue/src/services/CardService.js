@@ -17,7 +17,15 @@ export default {
         return axios.get(`/view-cards/${deckId}`);
     },
 
-    getCardById(cardId) {
-        return axios.get(`/card/${cardId}`);
+    getCardById(deckId, cardId,) {
+        return axios.get(`/card/${deckId}/${cardId}`);
+    },
+    getAllCards() {
+        return axios.get("/all-cards");
+    },
+
+    addKeyword(deckId, cardId, keyword) {
+        // Replace placeholders with actual values in the URL
+        return axios.post(`/add-keyword/${deckId}/${cardId}`, keyword);
     }
 }

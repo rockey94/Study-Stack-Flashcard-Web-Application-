@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS flash_card;
 DROP TABLE IF EXISTS flash_card_deck;
 DROP TABLE IF EXISTS users;
 
-CREATE TABLE users (
+CREATE TABLE users(
    user_id SERIAL PRIMARY KEY,
    username varchar(50) NOT NULL UNIQUE,
    password_hash varchar(200) NOT NULL,
@@ -23,8 +23,8 @@ CREATE TABLE flash_card_deck(
 CREATE TABLE flash_card(
     card_id INT,
     deck_id INT NOT NULL,
-    question varchar(255) NOT NULL,
-    answer varchar(255) NOT NULL,
+    question varchar(1000) NOT NULL,
+    answer varchar(1000) NOT NULL,
     creator INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     PRIMARY KEY (deck_id, card_id)
 );

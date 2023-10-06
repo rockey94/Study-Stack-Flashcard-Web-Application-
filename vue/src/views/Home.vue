@@ -20,27 +20,35 @@
       </div>
       <div class="created-decks-container">
         <div class="deck-list">
-          <div class="deck" v-for="deck in decks" :key="deck.deck_id">
-
-            <div 
-            class="deck-item" 
-            @mouseover="hover = true"
-            @mouseleave="hover = false">
-              <div class="deck-title">{{ deck.name }}</div>
-              <div class="deck-container">
-                <button id="edit-button" v-if="hover" v-on:click="goToDeck(deck.deckId)">Edit</button>
+          <div class="deck-item" v-for="deck in decks" :key="deck.deck_id">
+            <div class="flipper">
+              <!-- Front side -->
+              <div class="front">
+                <div class="deck-title">{{ deck.name }}</div>
                 <div v-if="deck.coverImage" class="cover-image">
                   <img :src="deck.coverImage" alt="Deck Cover" />
                 </div>
                 <div v-else class="cover-image">
                   <img src="default-cover-image.png" alt="Deck Cover" />
                 </div>
-                <button id="study-button" v-if="hover" v-on:click="goToStudySession(deck.deckId)">Study</button>
+              </div>
+              <!-- Back side -->
+              <div class="back">
+                <button id="edit-button" @click="goToDeck(deck.deckId)">
+                  Edit
+                </button>
+                <button
+                  v-if="deck.cards.length > 0"
+                  id="study-button"
+                  @click="determineIfStudyable(deck.deckId)"
+                >
+                  Study
+                </button>
               </div>
             </div>
-
           </div>
         </div>
+
         <p v-if="decks.length === 0" class="no-decks-message">
           Your stacks will appear here. Get going!
         </p>
@@ -55,6 +63,7 @@
   </div>
 </template>
 <script>
+import CardService from "../services/CardService";
 import DeckService from "../services/DeckService";
 
 export default {
@@ -62,7 +71,6 @@ export default {
   data() {
     return {
       decks: [],
-      hover: false,
     };
   },
   computed: {
@@ -83,7 +91,22 @@ export default {
     fetchDecksByCreator() {
       DeckService.viewDecksByCreator(this.creatorId)
         .then((response) => {
-          this.decks = response.data;
+          this.decks = response.data.map((deck) => ({
+            ...deck,
+            hover: false,
+            cards: [], // Initialize the cards array for each deck
+          }));
+
+          // Fetch cards for each deck and update the cards property
+          this.decks.forEach((deck) => {
+            CardService.viewCardsByDeckId(deck.deckId)
+              .then((response) => {
+                deck.cards = response.data;
+              })
+              .catch((error) => {
+                console.error("Error fetching cards for deck:", error);
+              });
+          });
         })
         .catch((error) => {
           console.error("Error fetching decks for creator:", error);
@@ -97,7 +120,17 @@ export default {
     },
     goToStudySession(deckId) {
       this.$router.push("/study/" + deckId);
-    }
+    },
+    determineIfStudyable(deckId) {
+      CardService.viewCardsByDeckId(deckId).then((response) => {
+        const cards = response.data;
+        if (cards.length == 0) {
+          window.alert("No flashcards to study! Edit the stack first.");
+        } else {
+          this.goToStudySession(deckId);
+        }
+      });
+    },
   },
 };
 </script>
@@ -113,36 +146,42 @@ export default {
   align-items: center;
 }
 
-.deck-item:hover {
-  background-color: rgb(245, 245, 243);
-}
-
 .deck-container {
   display: flex;
-  justify-content: center;
+  justify-content: space-evenly;
+  align-items: center;
+  height: 100%;
 }
 
-#edit-button, #study-button {
+#edit-button,
+#study-button {
   color: #fff;
   padding: 5px 10px;
   border: none;
   border-radius: 5px;
-  font-size: 12px;
-  max-height: 25px;
-  align-items: bottom;
+  font-size: 16px;
   cursor: pointer;
 }
 
 #edit-button {
+  margin-bottom: 10px;
   background-color: #3498db;
+}
+
+#edit-button:hover {
+  background-color: #2e7db2;
 }
 
 #study-button {
   background-color: #66c985;
 }
 
+#study-button:hover {
+  background-color: #32b65c;
+}
+
 #logout-button {
-  background-color: #df8d6d;
+  background-color: #df8d6d; 
   color: #fff;
   padding: 5px 10px;
   border: none;
@@ -152,6 +191,10 @@ export default {
   position: absolute;
   top: 20px;
   left: 20px;
+}
+
+#logout-button:hover {
+  background-color: #dd7f5a;
 }
 
 #s-logo {
@@ -209,8 +252,8 @@ h2 {
   position: relative;
 }
 
-button:hover {
-  background-color: #2580b3;
+#create-deck-button:hover {
+  background-color: #2e7db2;
 }
 
 .v-alert {
@@ -236,26 +279,57 @@ button:hover {
 }
 
 .deck-item {
+  perspective: 1000px;
+  position: relative;
+  width: 285px;
+  height: 175px;
+  margin: 10px; /* Apply margin as needed */
+  margin-bottom: 50px;
+}
+
+.flipper {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.deck-item .front,
+.deck-item .back {
+  backface-visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
-  flex-direction: column; /* arrange children vertically */
-  justify-content: space-between; /* distribute space between children */
-  text-align: center;
-  padding: 10px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
   border: 1px solid #ccc;
   background-color: rgb(255, 255, 253);
   box-shadow: 10px 5px 5px #ccc;
   border-radius: 5px;
-  margin-bottom: 20px;
-  margin-left: 5px;
-  margin-right: 5px;
-  height: 175px;
-  width: 285px;
-  flex: 1;
-  max-width: calc(100% - 10px);
+  width: 100%;
+  height: 100%;
+  transform: translateX(-5%) translateY(-3%);
+}
+
+.deck-item .back {
+  transform: rotateY(180deg) translateX(5%) translateY(-3%);
+  border: 1px solid #ccc;
+  background-color: rgb(255, 255, 253);
+  box-shadow: 10px 5px 5px #ccc;
+}
+
+.deck-item:hover .flipper {
+  transform: rotateY(180deg);
 }
 
 .cover-image img {
-  max-width: 275px;
+  max-width: 185px;
   max-height: 150px;
   margin-top: 10px;
 }

@@ -23,6 +23,7 @@ public class JdbcFlashCardDao implements FlashCardDao {
         card.setDeckId(rs.getInt("deck_id"));
         card.setQuestion(rs.getString("question"));
         card.setAnswer(rs.getString("answer"));
+        card.setKeyword(rs.getString("keyword"));
         card.setCreator(rs.getInt("creator"));
 
         return card;
@@ -30,23 +31,11 @@ public class JdbcFlashCardDao implements FlashCardDao {
 
     @Override
     public void updateCard(FlashCard card) {
-        String sql = "UPDATE flash_card SET deck_id = ?, question = ?, answer = ?, creator = ? WHERE deck_id = ? AND card_id = ?";
-        template.update(sql, card.getDeckId(), card.getQuestion(), card.getAnswer(), card.getCreator(), card.getDeckId(), card.getCardId());
+        String updateFlashCardSql = "UPDATE flash_card SET deck_id = ?, question = ?, answer = ?, creator = ? WHERE deck_id = ? AND card_id = ?";
+        template.update(updateFlashCardSql, card.getDeckId(), card.getQuestion(), card.getAnswer(), card.getCreator(), card.getDeckId(), card.getCardId());
     }
-//@Override
-//public void updateCard(FlashCard card, String keyword) {
-//    String updateFlashCardSql = "UPDATE flash_card SET deck_id = ?, question = ?, answer = ?, creator = ? WHERE deck_id = ? AND card_id = ?";
-//    template.update(updateFlashCardSql, card.getDeckId(), card.getQuestion(), card.getAnswer(), card.getCreator(), card.getDeckId(), card.getCardId());
-//
-//    // Delete existing keywords
-//    String deleteKeywordsSql = "DELETE FROM keywords WHERE deck_id = ? AND card_id = ?";
-//    template.update(deleteKeywordsSql, card.getDeckId(), card.getCardId());
-//
-//    // Insert new keyword
-//    String insertKeywordSql = "INSERT INTO keywords(deck_id, card_id, keyword) VALUES (?, ?, ?)";
-//    template.update(insertKeywordSql, card.getDeckId(), card.getCardId(), keyword);
-//}
-//TODO why is this here twice?
+
+    //TODO why is this here twice?
     @Override
     public void deleteCard(FlashCard card) {
         String sql = "DELETE FROM flash_card WHERE card_id = ?";
@@ -65,26 +54,37 @@ public class JdbcFlashCardDao implements FlashCardDao {
     }
 
     @Override
-    public FlashCard getCardById(int cardId) {
-        String sql = "SELECT * FROM flash_card WHERE card_id = ?";
-        return template.queryForObject(sql, flashCardRowMapper, cardId);
+    public FlashCard getCardById(int deckId, int cardId) {
+        String sql = "SELECT f.card_id, f.deck_id, f.question, f.answer, f.creator, k.keyword \n" +
+                "FROM flash_card f \n" +
+                "LEFT JOIN keywords k ON f.deck_id = k.deck_id AND f.card_id = k.card_id \n" +
+                "WHERE deck_id = ? AND card_id = ?";
+        return template.queryForObject(sql, flashCardRowMapper, deckId, cardId);
     }
 
     @Override
     public List<FlashCard> getAllCards() {
-        String sql = "SELECT * FROM flash_card";
+        String sql = "SELECT f.card_id, f.deck_id, f.question, f.answer, f.creator, k.keyword " +
+                "FROM flash_card f " +
+                "LEFT JOIN keywords k ON f.deck_id = k.deck_id AND f.card_id = k.card_id ORDER BY f.card_id";
         return template.query(sql, flashCardRowMapper);
     }
 
     @Override
     public List<FlashCard> getCardsByCreator(int creator) {
-        String sql = "SELECT * FROM flash_card WHERE creator = ?";
+        String sql = "SELECT f.card_id, f.deck_id, f.question, f.answer, f.creator, k.keyword " +
+                "FROM flash_card f " +
+                "LEFT JOIN keywords k ON f.deck_id = k.deck_id AND f.card_id = k.card_id " +
+                "WHERE f.creator = ? ORDER BY f.card_id";
         return template.query(sql, flashCardRowMapper, creator);
     }
 
     @Override
     public List<FlashCard> getCardsByDeckId(int deckId) {
-        String sql = "SELECT * FROM flash_card WHERE deck_id = ?";
+        String sql = "SELECT f.card_id, f.deck_id, f.question, f.answer, f.creator, k.keyword " +
+                "FROM flash_card f " +
+                "LEFT JOIN keywords k ON f.deck_id = k.deck_id AND f.card_id = k.card_id " +
+                "WHERE f.deck_id = ? ORDER BY f.card_id";
         return template.query(sql, flashCardRowMapper, deckId);
     }
 
@@ -99,4 +99,6 @@ public class JdbcFlashCardDao implements FlashCardDao {
         String sql = "DELETE FROM flash_card WHERE deck_id = ? AND card_id = ?";
         template.update(sql, deckId, cardId);
     }
+
+
 }

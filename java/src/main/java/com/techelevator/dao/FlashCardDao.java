@@ -12,7 +12,7 @@ public interface FlashCardDao {
 
     FlashCard createCard(FlashCard card);
 
-    FlashCard getCardById(int cardId);
+    FlashCard getCardById(int deckId, int cardId);
 
     List<FlashCard> getAllCards();
 

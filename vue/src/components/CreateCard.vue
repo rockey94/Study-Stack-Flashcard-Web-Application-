@@ -1,63 +1,46 @@
 <template>
-  <div id="create-deck">
-    <button
-      id="home-button"
-      v-if="$store.state.token != ''"
-      @click="backToHome"
-    >
-      Back to Home
-    </button>
+  <div id="create-card">
+    <button id="home-button" v-if="$store.state.token != ''" @click="backToHome">Back to Home</button>
     <img id="s-logo" src="S-logo.png" alt="Study Stack logo" />
+    <div role="created-alert" v-if="created">
+        {{ creationMessage }}
+    </div>
     <div role="alert" v-if="error">
       {{ errorMessage }}
     </div>
-    <form v-on:submit.prevent="createDeck">
-      <p id="max-length-message">{{ maxLengthMessage }}</p>
+    <form v-on:submit.prevent="createCard">
       <div class="form-input-group">
-        <label for="name">Name: </label>
-        <input type="text" maxlength="30" v-model="newDeck.name" required />
+        <label for="question">Question: </label>
+        <input type="text" v-model="newCard.question" required />
       </div>
       <div class="form-input-group">
-        <label for="coverImage">Cover Image URL: </label>
-        <input
-          type="text"
-          v-model="newDeck.coverImage"
-          placeholder="Optional"
-        />
+        <label for="answer">Answer: </label>
+        <input type="text" v-model="newCard.answer" required />
       </div>
-      <div class="form-input-group">
-        <label for="description">Stack Description: </label>
-        <input
-          type="text"
-          maxlength="999"
-          v-model="newDeck.description"
-          placeholder="Optional"
-        />
-      </div>
-      <button>Create Stack</button>
+      <button>Create Flashcard</button>
     </form>
   </div>
 </template>
 <script>
-import DeckService from "../services/DeckService";
+import CardService from "../services/CardService";
 export default {
   data() {
     return {
-      newDeck: {},
+      newCard: {},
       created: false,
+      creationMessage: 'Flashcard created!',
       error: false,
-      errorMessasge: "*Error creating stack.*",
-      maxLengthMessage: "",
+      errorMessasge: '*Error creating flashcard.*',
     };
   },
   methods: {
-    createDeck() {
-      this.newDeck.creator = this.$store.state.user.id;
-      DeckService.createDeck(this.newDeck)
+    createCard() {
+      this.newCard.creator = this.$store.state.user.id;
+      CardService.createCard(this.newCard)
         .then((response) => {
           if (response.status == 200) {
             this.created = true;
-            this.backToHome();
+            this.creationMessage = `Flashcard created for "${this.newCard.question}"!`
           }
         })
         .catch((error) => {
@@ -69,35 +52,31 @@ export default {
         });
     },
     backToHome() {
-      this.$router.push("/");
-    },
+      this.$router.push('/');
+    }
   },
-  watch: {
-    "newDeck.name"(value) {
-      if (value.length === 30) {
-        this.maxLengthMessage = "You can enter 30 characters only.";
-      } else {
-        this.maxLengthMessage = "";
-      }
+  computed: {
+    creatorId() {
+      return this.$store.state.user.id;
     },
   },
 };
 </script>
 
 <style scoped>
-#create-deck {
+#create-card {
   background-color: #cdecd7;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  min-height: 100vh; 
   font-family: Verdana;
 }
 
 #home-button {
-  background-color: #c184e9;
-  color: #fff;
+  background-color: #c184e9; 
+  color: #fff; 
   padding: 5px 10px;
   border: none;
   border-radius: 5px;
@@ -128,8 +107,8 @@ input {
 }
 
 button {
-  background-color: #3498db;
-  color: #fff;
+  background-color: #3498db; 
+  color: #fff; 
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -138,7 +117,7 @@ button {
 }
 
 button:hover {
-  background-color: #2580b3;
+  background-color: #2580b3; 
 }
 
 .router-link {
@@ -151,20 +130,15 @@ button:hover {
   color: #3498db;
 }
 
-div[role="alert"] {
+div[role=alert] {
   color: rgb(185, 48, 48);
   font-size: 16px;
   margin-bottom: 10px;
 }
 
-div[role="created-alert"] {
+div[role=created-alert] {
   color: #3498db;
   font-size: 18px;
   margin-bottom: 10px;
-}
-
-#max-length-message {
-  color: rgb(185, 48, 48);
-  font-size: 12px;
 }
 </style>
